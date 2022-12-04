@@ -1,3 +1,20 @@
 POST http://localhost:9000/2015-03-31/functions/function/invocations
 
 {"name": "yuki"}
+
+###
+POST http://localhost:9000/2015-03-31/functions/function/invocations
+
+{
+    "events":[
+        {
+            "type":"message",
+            "message":
+            {
+                "type":"text",
+                "id":"xxxxxx",
+                "text":"this is text message"
+            }
+        }
+    ]
+}
