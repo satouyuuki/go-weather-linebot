@@ -2,17 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-type MyEvent struct {
-	Name string `json:"name"`
-}
+func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
+	// debug log
+	eventJson, _ := json.Marshal(req)
+	log.Printf("EVENT: %s", eventJson)
 
-func HandleRequest(ctx context.Context, name MyEvent) (string, error) {
-	return fmt.Sprintf("Hey %s!", name.Name), nil
+	ctxJson, _ := json.Marshal(ctx)
+	log.Printf("context: %s", ctxJson)
+
+	return events.LambdaFunctionURLResponse{
+		Body: fmt.Sprintf("Hey %s!", eventJson)}, nil
 }
 
 func main() {
