@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -32,8 +33,13 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 		if event.Type == linebot.EventTypeMessage {
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
-				log.Printf("message: %s", message.Text)
+				if message.Text == "" {
+					return events.LambdaFunctionURLResponse{Body: "メッセージが入力されていません", StatusCode: http.StatusBadRequest}, nil
+				}
+				// オウムメッセージ
 				return events.LambdaFunctionURLResponse{Body: message.Text, StatusCode: 200}, nil
+			default:
+				return events.LambdaFunctionURLResponse{Body: "テキスト形式で入力してください", StatusCode: http.StatusBadRequest}, nil
 			}
 		}
 	}
