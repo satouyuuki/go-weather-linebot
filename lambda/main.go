@@ -15,6 +15,7 @@ import (
 func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 	// debug log
 	eventJson, _ := json.Marshal(req)
+	log.Print("update!!")
 	log.Printf("EVENT: %s", eventJson)
 
 	ctxJson, _ := json.Marshal(ctx)
