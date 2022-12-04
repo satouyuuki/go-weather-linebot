@@ -2,8 +2,8 @@ package externalapi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -14,15 +14,59 @@ type GeoLocation struct {
 	Lon float64 `json:"lon"`
 }
 
+type WeatherType string
+
+const (
+	Clear  = "Clear"
+	Clouds = "Clouds"
+	Rain   = "Rain"
+	Snow   = "Snow"
+)
+
+func NeedUmbrella(s string) bool {
+	return !(s == Clear || s == Clouds)
+}
+
+type WeatherSummary struct {
+	Main        string `json:"main"`
+	Description string `json:"description"`
+	Icon        string
+}
+
+type WeatherDetail struct {
+	Dt        int              `json:"dt"`
+	Temp      float32          `json:"temp"`
+	FeelsLike float32          `json:"feels_like"`
+	Weather   []WeatherSummary `json:"weather"`
+}
+
+type OneCall struct {
+	Timezone string
+	Current  WeatherDetail `json:"current"`
+	Hourly   []WeatherDetail
+}
+
 func GetGeoLocation(apiKey string, keyword string, geo interface{}) error {
 	requestURL := fmt.Sprintf("%s/geo/1.0/direct?q=%s&limit=1&appid=%s", OPENWEATHER_ORIGIN, keyword, apiKey)
 	resp, err := http.Get(requestURL)
 	if err == nil {
-		georesp, _ := json.Marshal(resp.Body)
-		log.Printf("georesp: %s", georesp)
 		defer resp.Body.Close()
 	} else {
 		panic(err)
 	}
 	return json.NewDecoder(resp.Body).Decode(geo)
+}
+
+func GetWeather(apiKey string, lat float64, lon float64, weather interface{}) error {
+	requestURL := fmt.Sprintf("%s/data/3.0/onecall?lang=ja&exclude=minutely,daily&units=metric&lat=%f&lon=%f&appid=%s", OPENWEATHER_ORIGIN, lat, lon, apiKey)
+	resp, err := http.Get(requestURL)
+	if err == nil {
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return errors.New("APIの利用上限に達しました。明日再度お試しください。")
+		}
+		defer resp.Body.Close()
+	} else {
+		panic(err)
+	}
+	return json.NewDecoder(resp.Body).Decode(weather)
 }

@@ -5,11 +5,26 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
+	"strconv"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
 )
+
+func ToJstFromTimestamp(ts int) time.Time {
+	i, err := strconv.ParseInt(fmt.Sprint(ts), 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	tm := time.Unix(i, 0)
+	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+
+	return tm.In(jst)
+	// return nowJST.Format(time.RFC3339)
+}
 
 func ParseRequest(channelSecret string, r events.LambdaFunctionURLRequest) ([]*linebot.Event, error) {
 	// if !validateSignature(channelSecret, r.Headers["x-line-signature"], []byte(r.Body)) {
