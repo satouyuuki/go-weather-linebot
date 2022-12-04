@@ -6,22 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/line/line-bot-sdk-go/v7/linebot"
+	"lambda.GoWeatherLinebot/externalapi"
 	util "lambda.GoWeatherLinebot/util"
 )
 
 func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
-	// debug log
-	eventJson, _ := json.Marshal(req)
-	log.Print("update!!")
-	log.Printf("EVENT: %s", eventJson)
-
-	ctxJson, _ := json.Marshal(ctx)
-	log.Printf("context: %s", ctxJson)
-
 	lineEvents, err := util.ParseRequest("", req)
 	lineEventsJson, _ := json.Marshal(req)
 	log.Printf("lineEventsJson: %s", lineEventsJson)
@@ -36,8 +30,22 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 				if message.Text == "" {
 					return events.LambdaFunctionURLResponse{Body: "メッセージが入力されていません", StatusCode: http.StatusBadRequest}, nil
 				}
+				geo := new([]externalapi.GeoLocation)
+				if err = externalapi.GetGeoLocation(
+					os.Getenv("OPENWEATHER_API_TOKEN"),
+					message.Text,
+					geo,
+				); err != nil {
+					log.Fatal(err)
+					return events.LambdaFunctionURLResponse{Body: "位置情報の検索に失敗しました", StatusCode: http.StatusBadRequest}, nil
+				} else if len(*geo) == 0 {
+					return events.LambdaFunctionURLResponse{Body: "正しい都市名を入力してください。例:「新宿区」", StatusCode: http.StatusBadRequest}, nil
+				}
+				geoJson, _ := json.Marshal(geo)
+				log.Printf("geojson: %s", geoJson)
+				sendmessage := fmt.Sprintf("message:%s,geo:%s", message.Text, geoJson)
 				// オウムメッセージ
-				return events.LambdaFunctionURLResponse{Body: message.Text, StatusCode: 200}, nil
+				return events.LambdaFunctionURLResponse{Body: sendmessage, StatusCode: 200}, nil
 			default:
 				return events.LambdaFunctionURLResponse{Body: "テキスト形式で入力してください", StatusCode: http.StatusBadRequest}, nil
 			}
@@ -45,7 +53,7 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 	}
 
 	return events.LambdaFunctionURLResponse{
-		Body: fmt.Sprintf("Hey %s!", eventJson)}, nil
+		Body: "lambda end"}, nil
 }
 
 func main() {
