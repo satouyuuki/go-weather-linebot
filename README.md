@@ -1,20 +1,20 @@
-# 毎日渋谷の天気を通知するLINEbot
+# 社畜専用お天気通知bot
+毎朝7時に傘を持っていくべきかどうかを自動で通知してくれるbot
 
-エンドポイント: 
-`http://localhost:9000/2015-03-31/functions/function/invocations`
 
-### aws_cliのプロファイルをセットする
+### インフラ構成図
+![インフラ構成図](assets/weather-bot.drawio.png)
+
+### aws_cliのプロファイルをセットする方法
 ```
 $ export TF_VAR_AWS_PROFILE=xxxxx
 ```
-
-### 参考になったサイト
-https://hands-on.cloud/terraform-deploy-python-lambda-container-image/
 
 ### dockerの基本的な使い方(debug)
 ```
 # imageからcontainerを作成して起動する
 $ docker run -p 9000:8080 ${container_image_name}
+# エンドポイント-> http://localhost:9000/2015-03-31/functions/function/invocations
 
 # コンテナを停止
 $ docker stop ${contaienrid}
@@ -32,3 +32,7 @@ $ docker cp main ${containerid}:/
 ### container 再起動
 $ docker restart ${contaienrid}
 ```
+
+
+### 参考になったサイト
+https://hands-on.cloud/terraform-deploy-python-lambda-container-image/
