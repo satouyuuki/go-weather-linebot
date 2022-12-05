@@ -27,9 +27,9 @@ func ToJstFromTimestamp(ts int) time.Time {
 }
 
 func ParseRequest(channelSecret string, r events.LambdaFunctionURLRequest) ([]*linebot.Event, error) {
-	// if !validateSignature(channelSecret, r.Headers["x-line-signature"], []byte(r.Body)) {
-	// 	return nil, linebot.ErrInvalidSignature
-	// }
+	if !validateSignature(channelSecret, r.Headers["x-line-signature"], []byte(r.Body)) {
+		return nil, linebot.ErrInvalidSignature
+	}
 
 	request := &struct {
 		Events []*linebot.Event `json:"events"`

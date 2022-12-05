@@ -23,7 +23,18 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 	lineEventsJson, _ := json.Marshal(req)
 	log.Printf("lineEventsJson: %s", lineEventsJson)
 
-	lineEvents, err := util.ParseRequest("", req)
+	// set env
+	wApiToken := os.Getenv("OPENWEATHER_API_TOKEN")
+	cSecret := os.Getenv("CHANNNE_SECRET")
+	cToken := os.Getenv("CHANNNE_TOKEN")
+
+	// create linebot
+	bot, err := linebot.New(cSecret, cToken)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	lineEvents, err := util.ParseRequest(cSecret, req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,27 +44,47 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if message.Text == "" {
+					if _, err = bot.ReplyMessage(
+						event.ReplyToken,
+						linebot.NewTextMessage(constant.MESSAGE_NOT_FOUND)).Do(); err != nil {
+						log.Print(err)
+					}
 					return events.LambdaFunctionURLResponse{Body: constant.MESSAGE_NOT_FOUND, StatusCode: http.StatusBadRequest}, nil
 				}
 				geo := new([]externalapi.GeoLocation)
 				if err = externalapi.GetGeoLocation(
-					os.Getenv("OPENWEATHER_API_TOKEN"),
+					wApiToken,
 					message.Text,
 					geo,
 				); err != nil {
 					log.Println(err)
+					if _, err = bot.ReplyMessage(
+						event.ReplyToken,
+						linebot.NewTextMessage(constant.GEOLOCATION_API_EXEC_FAIL)).Do(); err != nil {
+						log.Print(err)
+					}
 					return events.LambdaFunctionURLResponse{Body: constant.GEOLOCATION_API_EXEC_FAIL, StatusCode: http.StatusInternalServerError}, nil
 				} else if len(*geo) == 0 {
+					if _, err = bot.ReplyMessage(
+						event.ReplyToken,
+						linebot.NewTextMessage(constant.GEOLOCATION_API_NOT_FOUND)).Do(); err != nil {
+						log.Print(err)
+					}
 					return events.LambdaFunctionURLResponse{Body: constant.GEOLOCATION_API_NOT_FOUND, StatusCode: http.StatusBadRequest}, nil
 				}
 				weather := new(externalapi.OneCall)
 				if err = externalapi.GetWeather(
-					os.Getenv("OPENWEATHER_API_TOKEN"),
+					wApiToken,
 					(*geo)[0].Lat,
 					(*geo)[0].Lon,
 					weather,
 				); err != nil {
 					log.Println(err)
+					if _, err = bot.ReplyMessage(
+						event.ReplyToken,
+						linebot.NewTextMessage(constant.WEATHER_API_EXEC_FAIL)).Do(); err != nil {
+						log.Print(err)
+					}
 					return events.LambdaFunctionURLResponse{Body: constant.WEATHER_API_EXEC_FAIL, StatusCode: http.StatusInternalServerError}, nil
 				}
 
@@ -85,6 +116,11 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 					weather.Current.FeelsLike,
 				)
 				// レスポンスメッセージ
+				if _, err = bot.ReplyMessage(
+					event.ReplyToken,
+					linebot.NewTextMessage(sendmessage)).Do(); err != nil {
+					log.Print(err)
+				}
 				return events.LambdaFunctionURLResponse{Body: sendmessage, StatusCode: 200}, nil
 			default:
 				return events.LambdaFunctionURLResponse{Body: constant.INVALID_TYPE_MESSAGE, StatusCode: http.StatusBadRequest}, nil

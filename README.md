@@ -14,7 +14,7 @@ https://hands-on.cloud/terraform-deploy-python-lambda-container-image/
 ### dockerの基本的な使い方(debug)
 ```
 # imageからcontainerを作成して起動する
-$ docker run -p 9000:8080 weather-lambda
+$ docker run -p 9000:8080 ${container_image_name}
 
 # コンテナを停止
 $ docker stop ${contaienrid}
