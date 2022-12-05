@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"lambda.GoWeatherLinebot/constant"
 )
 
 const OPENWEATHER_ORIGIN = "https://api.openweathermap.org"
@@ -14,17 +16,8 @@ type GeoLocation struct {
 	Lon float64 `json:"lon"`
 }
 
-type WeatherType string
-
-const (
-	Clear  = "Clear"
-	Clouds = "Clouds"
-	Rain   = "Rain"
-	Snow   = "Snow"
-)
-
-func NeedUmbrella(s string) bool {
-	return !(s == Clear || s == Clouds)
+func NeedUmbrella(w constant.WeatherType) bool {
+	return !(w == constant.Clear || w == constant.Clouds)
 }
 
 type WeatherSummary struct {
@@ -62,7 +55,7 @@ func GetWeather(apiKey string, lat float64, lon float64, weather interface{}) er
 	resp, err := http.Get(requestURL)
 	if err == nil {
 		if resp.StatusCode == http.StatusTooManyRequests {
-			return errors.New("APIの利用上限に達しました。明日再度お試しください。")
+			return errors.New(constant.WEATHER_API_LIMIT_OVER)
 		}
 		defer resp.Body.Close()
 	} else {
