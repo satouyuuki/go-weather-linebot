@@ -23,7 +23,6 @@ func ToJstFromTimestamp(ts int) time.Time {
 	jst := time.FixedZone("Asia/Tokyo", 9*60*60)
 
 	return tm.In(jst)
-	// return nowJST.Format(time.RFC3339)
 }
 
 func ParseRequest(channelSecret string, r events.LambdaFunctionURLRequest) ([]*linebot.Event, error) {

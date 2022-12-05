@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -34,6 +31,11 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 		log.Fatal(err)
 	}
 
+	// bloa
+	if req.Headers == nil {
+		return externalapi.Broadcast("渋谷区", wApiToken, bot)
+	}
+
 	lineEvents, err := util.ParseRequest(cSecret, req)
 	if err != nil {
 		log.Fatal(err)
@@ -44,85 +46,20 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 			switch message := event.Message.(type) {
 			case *linebot.TextMessage:
 				if message.Text == "" {
-					if _, err = bot.ReplyMessage(
+					if _, err := bot.ReplyMessage(
 						event.ReplyToken,
 						linebot.NewTextMessage(constant.MESSAGE_NOT_FOUND)).Do(); err != nil {
 						log.Print(err)
 					}
 					return events.LambdaFunctionURLResponse{Body: constant.MESSAGE_NOT_FOUND, StatusCode: http.StatusBadRequest}, nil
 				}
-				geo := new([]externalapi.GeoLocation)
-				if err = externalapi.GetGeoLocation(
-					wApiToken,
-					message.Text,
-					geo,
-				); err != nil {
-					log.Println(err)
-					if _, err = bot.ReplyMessage(
-						event.ReplyToken,
-						linebot.NewTextMessage(constant.GEOLOCATION_API_EXEC_FAIL)).Do(); err != nil {
-						log.Print(err)
-					}
-					return events.LambdaFunctionURLResponse{Body: constant.GEOLOCATION_API_EXEC_FAIL, StatusCode: http.StatusInternalServerError}, nil
-				} else if len(*geo) == 0 {
-					if _, err = bot.ReplyMessage(
-						event.ReplyToken,
-						linebot.NewTextMessage(constant.GEOLOCATION_API_NOT_FOUND)).Do(); err != nil {
-						log.Print(err)
-					}
-					return events.LambdaFunctionURLResponse{Body: constant.GEOLOCATION_API_NOT_FOUND, StatusCode: http.StatusBadRequest}, nil
-				}
-				weather := new(externalapi.OneCall)
-				if err = externalapi.GetWeather(
-					wApiToken,
-					(*geo)[0].Lat,
-					(*geo)[0].Lon,
-					weather,
-				); err != nil {
-					log.Println(err)
-					if _, err = bot.ReplyMessage(
-						event.ReplyToken,
-						linebot.NewTextMessage(constant.WEATHER_API_EXEC_FAIL)).Do(); err != nil {
-						log.Print(err)
-					}
-					return events.LambdaFunctionURLResponse{Body: constant.WEATHER_API_EXEC_FAIL, StatusCode: http.StatusInternalServerError}, nil
-				}
-
-				var hourRains []string
-				for i, hour := range weather.Hourly {
-					if i >= 15 {
-						break
-					}
-					log.Printf("time: %s, main: %s", util.ToJstFromTimestamp(hour.Dt).Format(time.RFC3339), hour.Weather[0].Main)
-					wType := constant.ParseWeatherType(hour.Weather[0].Main)
-					if externalapi.NeedUmbrella(wType) {
-						hourRains = append(hourRains, fmt.Sprintf("%d時ごろに%s",
-							util.ToJstFromTimestamp(hour.Dt).Hour(),
-							wType.String(),
-						))
-					}
-				}
-				if len(hourRains) > 0 {
-					hourRains = append([]string{constant.NEED_UMBRELLA}, hourRains...)
-				} else {
-					hourRains = append([]string{constant.NO_NEED_UMBRELLA}, hourRains...)
-				}
-
-				sendmessage := fmt.Sprintf(
-					"今日の%sは%s\n現在の天気は%s\n体感気温は%.1f°",
-					message.Text,
-					strings.Join(hourRains, "\n"),
-					weather.Current.Weather[0].Description,
-					weather.Current.FeelsLike,
-				)
-				// レスポンスメッセージ
+				return externalapi.Reply(message.Text, wApiToken, event.ReplyToken, bot)
+			default:
 				if _, err = bot.ReplyMessage(
 					event.ReplyToken,
-					linebot.NewTextMessage(sendmessage)).Do(); err != nil {
+					linebot.NewTextMessage(constant.INVALID_TYPE_MESSAGE)).Do(); err != nil {
 					log.Print(err)
 				}
-				return events.LambdaFunctionURLResponse{Body: sendmessage, StatusCode: 200}, nil
-			default:
 				return events.LambdaFunctionURLResponse{Body: constant.INVALID_TYPE_MESSAGE, StatusCode: http.StatusBadRequest}, nil
 			}
 		}

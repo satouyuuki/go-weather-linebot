@@ -16,10 +16,6 @@ type GeoLocation struct {
 	Lon float64 `json:"lon"`
 }
 
-func NeedUmbrella(w constant.WeatherType) bool {
-	return !(w == constant.Clear || w == constant.Clouds)
-}
-
 type WeatherSummary struct {
 	Main        string `json:"main"`
 	Description string `json:"description"`

@@ -12,7 +12,7 @@ const (
 	Other
 )
 
-var WeatherName = [...]string{
+var weatherName = [...]string{
 	1: "晴れ",
 	2: "曇り",
 	3: "雨",
@@ -22,7 +22,7 @@ var WeatherName = [...]string{
 	7: "竜巻など",
 }
 
-var WeatherValue = map[string]int{
+var weatherValue = map[string]int{
 	"Clear":        1,
 	"Clouds":       2,
 	"Rain":         3,
@@ -32,13 +32,17 @@ var WeatherValue = map[string]int{
 	"Other":        7,
 }
 
-func (w WeatherType) String() string { return WeatherName[w] }
+func (w WeatherType) String() string { return weatherName[w] }
 
 func ParseWeatherType(name string) WeatherType {
-	for display, num := range WeatherValue {
+	for display, num := range weatherValue {
 		if name == display {
 			return WeatherType(num)
 		}
 	}
 	return Other
+}
+
+func NeedUmbrella(w WeatherType) bool {
+	return !(w == Clear || w == Clouds)
 }
