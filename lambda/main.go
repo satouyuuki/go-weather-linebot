@@ -33,7 +33,7 @@ func HandleRequest(ctx context.Context, req events.LambdaFunctionURLRequest) (ev
 
 	// bloa
 	if req.Headers == nil {
-		return externalapi.Broadcast("渋谷区", wApiToken, bot)
+		return externalapi.Broadcast("品川区", wApiToken, bot)
 	}
 
 	lineEvents, err := util.ParseRequest(cSecret, req)
