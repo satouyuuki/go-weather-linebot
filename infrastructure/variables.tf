@@ -5,7 +5,7 @@ variable "REGION" {
 
 variable "AWS_PROFILE" {
   type = string
-  default = "default"
+  default = "cli_only_user"
 }
 
 variable "CHANNNE_SECRET" {

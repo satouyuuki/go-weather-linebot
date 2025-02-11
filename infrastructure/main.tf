@@ -25,6 +25,7 @@ locals {
 
 resource "aws_ecr_repository" "weather_bot_repo" {
   name = local.ecr_repository_name
+  force_delete = true
 }
 
 resource "null_resource" "ecr_image" {
